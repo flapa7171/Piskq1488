@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "vaultwatcher",
+  "version": "1.0.0",
+  "name": "Vault Watcher",
+  "description": "Отслеживает нужные предметы в открытом сундуке/сейфе (vault), показывает уведомление и мгновенно забирает их. Настройка через команду /autovault.",
+  "authors": [
+    "you"
+  ],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.vaultwatcher.VaultWatcherClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.8",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
