@@ -1,12 +1,10 @@
 package dev.vaultwatcher;
 
-import net.fabricmc.fabric.api.client.rendering.v1.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * Показывает надпись поверх экрана (похоже на /title, но чисто на клиенте,
@@ -26,11 +24,7 @@ public final class OverlayNotifier {
     }
 
     public static void register() {
-        HudElementRegistry.attachElementAfter(
-                VanillaHudElements.CHAT,
-                ResourceLocation.fromNamespaceAndPath("vaultwatcher", "notice"),
-                OverlayNotifier::render
-        );
+        HudRenderCallback.EVENT.register(OverlayNotifier::render);
     }
 
     private static void render(GuiGraphics context, DeltaTracker tickCounter) {
@@ -40,8 +34,7 @@ public final class OverlayNotifier {
         }
 
         Minecraft client = Minecraft.getInstance();
-        if (client.screen == null) {
-            // показываем только пока открыт какой-то экран (например, окно сейфа)
+        if (client.player == null) {
             return;
         }
 
