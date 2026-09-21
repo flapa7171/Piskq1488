@@ -10,11 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Сейф сам закидывает игроку предмет в инвентарь (без окна), поэтому единственный
- * надёжный клиентский способ узнать "что выпало" — сравнивать инвентарь между тиками.
- * Предметы НЕ из списка вообще не трогаются и никак не отмечаются — как ты и просил.
- */
 public final class InventoryWatcher {
 
     private InventoryWatcher() {}
@@ -36,15 +31,13 @@ public final class InventoryWatcher {
         RegistryAccess registryAccess = client.level.registryAccess();
         Map<String, Integer> current = new HashMap<>();
 
-        for (ItemStack stack : player.getInventory().items) {
+        for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
             if (stack.isEmpty()) continue;
             Optional<String> match = ItemScanner.match(stack, cfg, registryAccess);
             match.ifPresent(label -> current.merge(label, stack.getCount(), Integer::sum));
         }
 
         if (!initialized) {
-            // при первом запуске просто запоминаем текущее состояние,
-            // чтобы не сработать на предметы, которые уже лежали в инвентаре
             lastCounts = current;
             initialized = true;
             return;

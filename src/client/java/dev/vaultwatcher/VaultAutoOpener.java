@@ -2,22 +2,17 @@ package dev.vaultwatcher;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
-/**
- * НЕ поворачивает камеру и не ищет сейфы сам — только кликает ПКМ, когда игрок
- * САМ уже смотрит прицелом на vault/ominous_vault, держа подходящий ключ.
- * Клик "мгновенный": проверка идёт каждый клиентский тик.
- */
 public final class VaultAutoOpener {
 
     private VaultAutoOpener() {}
@@ -28,8 +23,6 @@ public final class VaultAutoOpener {
     private static final ResourceLocation TRIAL_KEY = ResourceLocation.withDefaultNamespace("trial_key");
     private static final ResourceLocation OMINOUS_TRIAL_KEY = ResourceLocation.withDefaultNamespace("ominous_trial_key");
 
-    // не долбим сервер каждый тик по одному и тому же блоку — небольшой троттлинг,
-    // но всё ещё "мгновенно" по ощущениям (несколько раз в секунду)
     private static final int RETRY_TICKS = 4;
     private static BlockPos lastPos = null;
     private static int cooldown = 0;
@@ -44,12 +37,11 @@ public final class VaultAutoOpener {
             return;
         }
 
-        Player player = client.player;
+        LocalPlayer player = client.player;
         if (player == null || client.level == null || client.gameMode == null) {
             return;
         }
 
-        // мод реагирует только когда игрок сам уже смотрит на блок — камеру не трогаем
         HitResult hit = client.hitResult;
         if (!(hit instanceof BlockHitResult blockHit) || hit.getType() != HitResult.Type.BLOCK) {
             return;

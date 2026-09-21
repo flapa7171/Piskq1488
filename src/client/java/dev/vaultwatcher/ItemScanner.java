@@ -15,13 +15,6 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.Optional;
 
-/**
- * Определяет, "интересен" ли предмет в открытом контейнере, и как его подписать.
- *
- * ВНИМАНИЕ: код написан по маппингам Mojang (официальные названия классов,
- * которые Fabric использует по умолчанию для 1.21.8). Если у тебя используется
- * Yarn — часть имён классов/методов будет отличаться (см. README).
- */
 public final class ItemScanner {
 
     private ItemScanner() {}
@@ -35,10 +28,6 @@ public final class ItemScanner {
     private static final ResourceKey<Enchantment> WIND_BURST =
             ResourceKey.create(Registries.ENCHANTMENT, ResourceLocation.withDefaultNamespace("wind_burst"));
 
-    /**
-     * @return человекочитаемое название найденного "интересного" предмета, если он совпал
-     *         с включёнными настройками, иначе Optional.empty().
-     */
     public static Optional<String> match(ItemStack stack, VaultWatcherConfig cfg, RegistryAccess registryAccess) {
         if (stack == null || stack.isEmpty()) {
             return Optional.empty();
@@ -47,7 +36,6 @@ public final class ItemScanner {
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         String itemIdStr = itemId.toString();
 
-        // --- встроенные предметы ---
         if (cfg.heavyCore && HEAVY_CORE.equals(itemId)) {
             return Optional.of("Навершие булавы");
         }
@@ -58,7 +46,6 @@ public final class ItemScanner {
             return Optional.of("Заряд ветра");
         }
 
-        // --- зачарованная книга с нужными чарами ---
         if (stack.is(Items.ENCHANTED_BOOK) && registryAccess != null) {
             String enchantMatch = matchEnchantedBook(stack, cfg, registryAccess);
             if (enchantMatch != null) {
@@ -66,7 +53,6 @@ public final class ItemScanner {
             }
         }
 
-        // --- кастомные предметы по id ---
         for (String customId : cfg.customItems) {
             if (customId.equalsIgnoreCase(itemIdStr)) {
                 return Optional.of(stack.getHoverName().getString());
@@ -82,10 +68,10 @@ public final class ItemScanner {
             return null;
         }
 
-        Registry<Enchantment> enchantmentRegistry = registryAccess.registryOrThrow(Registries.ENCHANTMENT);
+        Registry<Enchantment> enchantmentRegistry = registryAccess.lookupOrThrow(Registries.ENCHANTMENT);
 
         if (cfg.density4 || cfg.density5) {
-            Optional<Holder.Reference<Enchantment>> density = enchantmentRegistry.getHolder(DENSITY);
+            Optional<Holder.Reference<Enchantment>> density = enchantmentRegistry.get(DENSITY);
             if (density.isPresent()) {
                 int lvl = enchantments.getLevel(density.get());
                 if (lvl == 4 && cfg.density4) return "Книга: Плотность IV";
@@ -94,7 +80,7 @@ public final class ItemScanner {
         }
 
         if (cfg.windBurst2 || cfg.windBurst3) {
-            Optional<Holder.Reference<Enchantment>> windBurst = enchantmentRegistry.getHolder(WIND_BURST);
+            Optional<Holder.Reference<Enchantment>> windBurst = enchantmentRegistry.get(WIND_BURST);
             if (windBurst.isPresent()) {
                 int lvl = enchantments.getLevel(windBurst.get());
                 if (lvl == 2 && cfg.windBurst2) return "Книга: Порыв ветра II";
