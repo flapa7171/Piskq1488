@@ -4,21 +4,27 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.VaultBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.VaultBlockEntity;
+import net.minecraft.world.level.block.entity.vault.VaultSharedData;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+
+import java.util.Optional;
 
 public final class VaultAutoOpener {
 
     private VaultAutoOpener() {}
 
     private static final ResourceLocation VAULT_ID = ResourceLocation.withDefaultNamespace("vault");
-    private static final ResourceLocation OMINOUS_VAULT_ID = ResourceLocation.withDefaultNamespace("ominous_vault");
 
     private static final ResourceLocation TRIAL_KEY = ResourceLocation.withDefaultNamespace("trial_key");
     private static final ResourceLocation OMINOUS_TRIAL_KEY = ResourceLocation.withDefaultNamespace("ominous_trial_key");
@@ -51,18 +57,40 @@ public final class VaultAutoOpener {
         BlockState state = client.level.getBlockState(pos);
         ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
 
-        boolean isVault = VAULT_ID.equals(blockId);
-        boolean isOminousVault = OMINOUS_VAULT_ID.equals(blockId);
-        if (!isVault && !isOminousVault) {
+        if (!VAULT_ID.equals(blockId)) {
             lastPos = null;
             return;
         }
 
+        boolean isOminous = state.hasProperty(VaultBlock.OMINOUS) && state.getValue(VaultBlock.OMINOUS);
+
         ItemStack held = player.getMainHandItem();
         ResourceLocation heldId = BuiltInRegistries.ITEM.getKey(held.getItem());
-        boolean hasCorrectKey = (isVault && TRIAL_KEY.equals(heldId))
-                || (isOminousVault && OMINOUS_TRIAL_KEY.equals(heldId));
+        boolean hasCorrectKey = isOminous
+                ? OMINOUS_TRIAL_KEY.equals(heldId)
+                : TRIAL_KEY.equals(heldId);
         if (!hasCorrectKey) {
+            return;
+        }
+
+        BlockEntity be = client.level.getBlockEntity(pos);
+        if (!(be instanceof VaultBlockEntity vaultEntity)) {
+            return;
+        }
+
+        VaultSharedData shared = vaultEntity.getSharedData();
+        if (!shared.hasDisplayItem()) {
+            return;
+        }
+
+        ItemStack displayItem = shared.getDisplayItem();
+        RegistryAccess registryAccess = client.level.registryAccess();
+        Optional<String> match = ItemScanner.match(displayItem, cfg, registryAccess);
+
+        String liveLabel = match.orElseGet(() -> displayItem.getHoverName().getString());
+        OverlayNotifier.notify("Витрина: " + liveLabel);
+
+        if (match.isEmpty()) {
             return;
         }
 
